@@ -1,65 +1,53 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Model } from 'mongoose';
 import { Episode } from './entity/episode.entity';
 import { CreateEpisodeDto } from './dto/create-episode.dto';
 import { UpdateEpisodeDto } from './dto/update-episode.dto';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class EpisodesService {
-  private episodes: Episode[] = [];
+  constructor(@InjectModel('Episode') private episodeModel: Model<Episode>) {}
 
-  async findAll(sort: 'asc' | 'desc' = 'desc') {
-    const sortAsc = (a: Episode, b: Episode) => (a.name > b.name ? 1 : -1);
-    const sortDesc = (a: Episode, b: Episode) => (a.name < b.name ? 1 : -1);
-    return sort === 'asc'
-      ? this.episodes.sort(sortAsc)
-      : this.episodes.sort(sortDesc);
-  }
-  async findFeatured() {
-    return this.episodes.filter((episode) => episode.featured);
+  //find all episodes
+  async findAll() {
+    return this.episodeModel.find().exec();
   }
 
+  //find by id
   async findOne(id: string) {
-    const episode = this.episodes.find((episode) => String(episode.id) === id);
+    const episode = await this.episodeModel.findById(id).exec();
     if (!episode) {
       throw new NotFoundException(`Episode with ID ${id} not found`);
     }
     return episode;
   }
+
+  //create an episode
   async create(createEpisodeDto: CreateEpisodeDto) {
-    const newEpisode = { ...createEpisodeDto, id: randomUUID() };
-    this.episodes.push(newEpisode);
-
-    return newEpisode;
+    const newEpisode = new this.episodeModel(createEpisodeDto);
+    return newEpisode.save();
   }
 
+  //update an episode
   async update(id: string, updateEpisodeDto: UpdateEpisodeDto) {
-    console.log('Existing Episodes:', this.episodes); //  Log all episodes
-    console.log('Updating Episode ID:', id); // Log requested ID
-    const index = this.episodes.findIndex(
-      (episode) => String(episode.id) === id,
-    );
-    if (index == -1) {
-      throw new NotFoundException(`Episode with ID: ${id} not found`);
+    const updatedEpisode = await this.episodeModel
+      .findByIdAndUpdate(id, updateEpisodeDto, { new: true })
+      .exec();
+
+    if (!updatedEpisode) {
+      throw new NotFoundException(`Episode with ${id} not found`);
     }
-    if (updateEpisodeDto.publishedAt) {
-      updateEpisodeDto.publishedAt = new Date(updateEpisodeDto.publishedAt);
-    }
-    //update
-    this.episodes[index] = { ...this.episodes[index], ...updateEpisodeDto };
-    return this.episodes[index];
+    return updatedEpisode;
   }
 
+  //delete an episode
   async delete(id: String) {
-    const index = this.episodes.findIndex(
-      (episode) => String(episode.id) === id,
-    );
-    if (index == -1) {
-      throw new NotFoundException(`Episode with ID: ${id} not found`);
+    const deletedEpisode = await this.episodeModel.findByIdAndDelete(id).exec();
+    if (!deletedEpisode) {
+      throw new NotFoundException(`Episode with ${id} not found`);
     }
-
-    const deletedEpisode = this.episodes[index]; //save for response
-    this.episodes.splice(index, 1); //remove froma array
-    return { message: `Episode with ID: ${id} deleted`, deletedEpisode };
+    return deletedEpisode;
   }
 }

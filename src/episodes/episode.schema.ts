@@ -1,5 +1,5 @@
 import { Schema, Document } from 'mongoose';
-export const EpisodesSchema = new Schema({
+export const EpisodeSchema = new Schema({
   name: {
     type: String,
     required: true,
@@ -13,7 +13,7 @@ export const EpisodesSchema = new Schema({
     required: true,
   },
 });
-export interface Epsiode extends Document {
+export interface Episode extends Document {
   id: string;
   name: string;
   featured: boolean;

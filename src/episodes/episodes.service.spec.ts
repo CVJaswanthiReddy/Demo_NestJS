@@ -62,7 +62,7 @@ describe('EpisodesService', () => {
       featured: false,
       publishedAt: new Date(),
     });
-    const result = await service.findAll('asc');
+    const result = await service.findAll();
     expect(result[0].name).toBe('Episode C');
     expect(result[1].name).toBe('Episode D');
   });
